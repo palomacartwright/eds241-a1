@@ -1,7 +1,7 @@
 ---
-title: "EDS241: Assignment template/example"
+title: "EDS241: Assignment 1"
 author: "Paloma Cartwright"
-date: '`r format(Sys.time(), "%m/%d/%Y")`'
+date: '`r Sys.Date()`'
 output: 
   pdf_document:
     toc: false
@@ -10,35 +10,33 @@ header-includes:
   - \setlength{\parindent}{1em}
   - \usepackage{float}
 --- 
-  
 ``` {r setup, echo = FALSE, message = FALSE, warning = FALSE}
 
 # set default chunk options
-knitr::opts_chunk$set(fig.width = 4, fig.height = 3, 
+knitr::opts_chunk$set(fig.width = 4, fig.height = 3,
                       echo = TRUE, message = FALSE, warning = FALSE)
 
-
 # load packages
-packages=c("stargazer", "here", "tidyr", "dplyr","stringr", "janitor", 
-           "cowplot", "ggplot2", "tinytex", "datasets", "tibble")
+packages <- c("stargazer", "here", "tidyr", "tidyverse",
+           "dplyr", "stringr", "janitor", "huxtable",
+           "cowplot", "ggplot2", "tinytex", "datasets",
+           "tibble", "readxl", "estimatr", "car")
 
 for (i in packages) {
-  if (require(i,character.only=TRUE)==FALSE) {
-    install.packages(i,repos='http://cran.us.r-project.org')
+  if (require(i, character.only = TRUE) == FALSE) {
+    install.packages(i, repos = "http://cran.us.r-project.org")
   }
   else {
-    require(i,character.only=TRUE)
+    require(i, character.only = TRUE)
   }
 }
 
 
-#devtools::install_github('rstudio/rmarkdown')
-options(scipen=999) # not scientific notation
-
-
 ```
 
-\noindent In this mock assignment, we use the preloaded ``mtcars" data in R to investigate the relationship between vehicle miles per gallon (MPG), weight, and number of cylinders. The data was extracted from the 1974 Motor Trend US magazine, and comprises fuel consumption and 10 aspects of automobile design and performance for 32 automobiles (1973--74 models).
+\noindent The data for this assignment come from CalEnviroScreen 4.0, a mapping and data tool produced by the California Office of Environmental Health Hazards Assessment (OEHHA). The data are compiled and constructed from a variety of sources and cover all 8,035 census tracts in California. Source: https://oehha.ca.gov/calenviroscreen/report/calenviroscreen-40 .
+
+\noindent The full data are contained in the file CES4.xls, which is available on Gauchospace (note that the Excel file has three “tabs” or “sheets”). The data is in the tab “CES4.0FINAL_results” and “Data Dictionary” contains the definition of the variables.
 
 # Clean and plot data
 
@@ -46,72 +44,86 @@ options(scipen=999) # not scientific notation
 
 ```{r , include=TRUE}
 
-# Load data
+# Load data and clean names
+ces4_raw <- read_excel("CES4.xlsx", sheet = "CES4.0FINAL_results") %>%
+  na_if("NA") %>%
+  clean_names()
 
-data("mtcars")
-raw_data <- mtcars
 
-# Clean data
+# Select columns wanted data
+ces4 <- ces4_raw %>%
+  select("census_tract", "total_population",
+         "california_county", "low_birth_weight", "pm2_5", "poverty")
 
-## Add model names as a column 
-## [this is just an example manipulation, I rarely assign rownames to a column]
-
-clean_data <- tibble::rownames_to_column(raw_data, "model")
-
+ces4_clean <- na.omit(ces4)
 
 ```
 
-\noindent The code chunk below shows how to produce a scatter plot of MPG against weight.  
+\noindent The following code chunks answer the questions provided in the assignment.  
 
+(a)
 ```{r , include=TRUE}
+# Avg PM2.5 Conc
 
-# Plot 1
-
-plot_1 <- ggplot(clean_data, aes(y=mpg, x = wt))+
-  geom_point()+
-  theme_cowplot(14)+
-  labs(x = "Weight (1000 lbs)", y = "Miles per gallon")
+avg_pm25_conc <- mean(ces4$pm2_5)
 
 ```
 
-\newpage
-<center>**Figure 1: MPG and vehicle weight**</center>
-```{r , fig.width = 4, fig.height = 3, eval=TRUE, echo=FALSE}
-plot_1
-```
+The average PM2.5 concentration across all census tracts in California is `r avg_pm25_conc`.
 
-\noindent Figure 1 shows the expected negative relationship between vehicle weight and MPG.
+(b) 
+```{r}
+# highest poverty
 
-# Run and interpret regression models
-
-\noindent In order to more formally analyze the relationship between MPG, vehicle weight, and cylinders we estimate the following regression: 
-
-\begin{align}
-  Y_{i} = \beta_0 + \beta_1 X_{1i} + \beta_2 X_{2i} + u_{i}
-\end{align}
-
-\noindent where $Y_{i}$ is MPG for vehicle model $i$, $X_{1i}$ is the vehicle weight, $X_{2i}$ is the number of cylinders in the engine, and $u_{i}$ the regression error term. We will consider a regression including only vehicle weight, and a regression including vehicle weight and number of cylinders.
-
-\medskip
-
-\noindent In R, we run the following code: 
-
-```{r , include=TRUE}
-
-model_1 <- lm(mpg ~ wt, data=clean_data)
-model_2 <- lm(mpg ~ wt + cyl, data=clean_data)
+highest_poverty <- ces4 %>%
+  group_by(california_county) %>%
+  summarize(avg_poverty = na.omit(mean(poverty))) %>%
+  arrange(desc(avg_poverty))
 
 ```
 
-\noindent Table 1 shows the estimated coeffients from estimating equation (1). 
+The county with the highest level of poverty is: . 
 
-```{r , results = 'asis', echo = FALSE}
-stargazer(model_1, model_2, type = "latex", ci=FALSE, no.space = TRUE, 
-          header = FALSE, omit = c("Constant"), omit.stat = c("adj.rsq","ser", "f"),
-          covariate.labels = c("Weight (1000 lbs)", "Cylinders"), dep.var.labels = c("MPG"),
-          dep.var.caption = c(""),
-          title = "MPG and vehicle weight", table.placement = "H")
+(c) The histograms are shown below:
+
+```{r}
+
+ggplot(data = ces4_clean, aes(x = low_birth_weight)) +
+  geom_bar()
+
+ggplot(data = ces4_clean, aes(x = pm2_5)) +
+  geom_histogram()
+```
+(d) 
+```{r}
+model <- lm_robust(low_birth_weight ~ pm2_5, data = ces4)
+summary(model)
+```
+
+The slope coefficient for the regression of Low Birth Rate on PM2.5 is `r model$coefficients[2]`. The heteroskedacticity-robust standard error is `r model$std.error[2]`. The slope coefficient tells us that for every 1 microgram per cubic meter increase in PM2.5 concentration, there is a `r model$coefficients[2]` increase in the percentage of census tract births with weight less than 2500g. This is statistically significant at the 5% level. 
+
+(e)
+```{r}
 
 ```
 
-\noindent In model (1), the estimated $\beta_{1}$ coefficient implies that a 1000 pound increase in vehicle weight reduces miles per gallon by 5.3 miles. Adding the number of cylinders in model (2) reduces $\hat{\beta_{1}}$ from -5.3 to -3.2.
+
+(f) 
+```{r}
+model2 <- lm_robust(low_birth_weight ~ pm2_5 + poverty, data = ces4)
+summary(model2)
+```
+
+The estimated coefficient for poverty is `r model2$coefficients[3]`. This tells us that holding PM2.5 constant, for every one percent increase in the population of the census tract living below twice the federal poverty line there is a `r model2$coefficients[3]` increase in the percentage of census tract births with weight less than 2500g. The coefficient for PM2.5 increases which displays that when poverty is considered in the regression, the PM2.5 value becomes more prominent. These variables are correlated. In the model that omits poverty, the regression coefficient of PM2.5 captures the effect of poverty on low birth weights.  
+
+
+
+
+(g)
+```{r}
+linhyp <- linearHypothesis(model2, c("pm2_5 = 0", "poverty=0"),
+                           white.adjust = "hc2")
+linhyp
+```
+With the p-value being `r linhyp$'Pr(>Chisq)'[2]`, we can reject the null hypothesis that the effect of PM2.5 is equal to the effect of poverty. 
+
