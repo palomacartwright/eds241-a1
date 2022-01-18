@@ -37,7 +37,7 @@ for (i in packages) {
 
 \noindent The full data are contained in the file CES4.xls, which is available on Gauchospace (note that the Excel file has three “tabs” or “sheets”). The data is in the tab “CES4.0FINAL_results” and “Data Dictionary” contains the definition of the variables.
 
-# Clean and plot data
+# Clean data
 
 \noindent The following code loads and cleans the data.
 
@@ -80,7 +80,7 @@ highest_poverty <- ces4 %>%
 
 ```
 
-The county with the highest level of poverty is: . 
+The county with the highest level of poverty is: `r highest_poverty$california_county[1]`. 
 
 # (c) Make a histogram depicting the distribution of percent low birth weight and PM2.5.
 
@@ -95,13 +95,13 @@ birth_weight_plot <- ggplot(data = ces4) +
 pm2_5_plot <- ggplot(data = ces4) +
   geom_histogram(aes(x = pm2_5)) +
   theme_minimal() +
-  labs(x = "Frequency", 
-       y = "PM 2.5 in micrograms per cubic meter")
+  labs(y = "Frequency", 
+       x = "PM 2.5 in micrograms per cubic meter")
 
 ```
 
 ```{r, fig.cap="California Census Track Distributions of Low Birth Weight and PM2.5"}
-birth_weight_plot | pm2_5_plot
+birth_weight_plot / pm2_5_plot
 ```
 
 
@@ -114,15 +114,7 @@ summary(model)
 
 The slope coefficient for the regression of Low Birth Weight on PM2.5 is `r model$coefficients[2]`. The heteroskedacticity-robust standard error is `r model$std.error[2]`. The slope coefficient tells us that for every 1 microgram per cubic meter increase in PM2.5 concentration, there is a `r model$coefficients[2]` increase in the percentage of census tract births with weight less than 2500g. This is statistically significant at the 5% level. 
 
-# (e) Suppose a new air quality policy is expected to reduce PM2.5 concentration by 2 micrograms per cubic meters. Predict the new average value of `low_birth_weight` and derive its 95% confidence interval. Interpret the 95% confidence interval.
-
-```{r}
-intercept <- model$coefficients[1]
-b1 <- model$coefficients[2]
-x = -2
-
-```
-
+### Question e was removed
 
 # (f) Add the variable `poverty` as an explanatory variable to the regression in (d). Interpret the estimated coefficient on Poverty. What happens to the estimated coefficient on PM25, compared to the regression in (d). Explain. 
 
