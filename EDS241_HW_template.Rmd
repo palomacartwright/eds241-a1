@@ -10,24 +10,23 @@ header-includes:
   - \setlength{\parindent}{1em}
   - \usepackage{float}
 --- 
+
 ``` {r setup, echo = FALSE, message = FALSE, warning = FALSE}
 
 # set default chunk options
-knitr::opts_chunk$set(fig.width = 4, fig.height = 3,
+knitr::opts_chunk$set(fig.width = 4, fig.height = 3, 
                       echo = TRUE, message = FALSE, warning = FALSE)
 
 # load packages
-packages <- c("stargazer", "here", "tidyr", "tidyverse",
-           "dplyr", "stringr", "janitor", "huxtable",
-           "cowplot", "ggplot2", "tinytex", "datasets",
-           "tibble", "readxl", "estimatr", "car")
+packages=c("stargazer", "here", "tidyr", "tidyverse", "dplyr","stringr", "janitor", "huxtable",
+           "cowplot", "ggplot2", "tinytex", "datasets", "tibble", "readxl", "estimatr", "patchwork", "car")
 
 for (i in packages) {
-  if (require(i, character.only = TRUE) == FALSE) {
-    install.packages(i, repos = "http://cran.us.r-project.org")
+  if (require(i,character.only=TRUE)==FALSE) {
+    install.packages(i,repos='http://cran.us.r-project.org')
   }
   else {
-    require(i, character.only = TRUE)
+    require(i,character.only=TRUE)
   }
 }
 
@@ -45,23 +44,21 @@ for (i in packages) {
 ```{r , include=TRUE}
 
 # Load data and clean names
-ces4_raw <- read_excel("CES4.xlsx", sheet = "CES4.0FINAL_results") %>%
-  na_if("NA") %>%
+CES4_raw <- read_csv(here("ces4.csv")) %>% 
   clean_names()
 
 
 # Select columns wanted data
-ces4 <- ces4_raw %>%
-  select("census_tract", "total_population",
-         "california_county", "low_birth_weight", "pm2_5", "poverty")
-
-ces4_clean <- na.omit(ces4)
+ces4 <- CES4_raw %>%
+  select(census_tract, total_population, 
+         california_county, low_birth_weight, pm2_5, poverty)
 
 ```
 
 \noindent The following code chunks answer the questions provided in the assignment.  
 
-(a)
+# (a) What is the average concentration of PM2.5 across all census tracts in California?
+
 ```{r , include=TRUE}
 # Avg PM2.5 Conc
 
@@ -71,55 +68,74 @@ avg_pm25_conc <- mean(ces4$pm2_5)
 
 The average PM2.5 concentration across all census tracts in California is `r avg_pm25_conc`.
 
-(b) 
-```{r}
-# highest poverty
+# (b) What county has the highest level of poverty in California? 
 
-highest_poverty <- ces4 %>%
-  group_by(california_county) %>%
-  summarize(avg_poverty = na.omit(mean(poverty))) %>%
+```{r}
+# highest poverty 
+
+highest_poverty <- ces4 %>% 
+  group_by(california_county) %>% 
+  summarize(avg_poverty = na.omit(mean(poverty))) %>% 
   arrange(desc(avg_poverty))
 
 ```
 
 The county with the highest level of poverty is: . 
 
-(c) The histograms are shown below:
+# (c) Make a histogram depicting the distribution of percent low birth weight and PM2.5.
 
 ```{r}
 
-ggplot(data = ces4_clean, aes(x = low_birth_weight)) +
-  geom_bar()
+birth_weight_plot <- ggplot(data = ces4) +
+  geom_histogram(aes(x = low_birth_weight)) + 
+  theme_minimal()+
+  labs(y = "Frequency", 
+       x = "% of Birth Weight < 2500 grams")
 
-ggplot(data = ces4_clean, aes(x = pm2_5)) +
-  geom_histogram()
+pm2_5_plot <- ggplot(data = ces4) +
+  geom_histogram(aes(x = pm2_5)) +
+  theme_minimal() +
+  labs(x = "Frequency", 
+       y = "PM 2.5 in micrograms per cubic meter")
+
 ```
-(d) 
+
+```{r, fig.cap="California Census Track Distributions of Low Birth Weight and PM2.5"}
+birth_weight_plot | pm2_5_plot
+```
+
+
+# (d) Estimate a OLS regression of `low_birth_weight` on `pm2_5`. Report the estimated slope coefficient and its heteroskedasticity-robust standard error. Interpret the estimated slope coefficient. Is the effect of `pm2_5` on `low_birth_weight` statistically significant at the 5%?
+
 ```{r}
 model <- lm_robust(low_birth_weight ~ pm2_5, data = ces4)
 summary(model)
 ```
 
-The slope coefficient for the regression of Low Birth Rate on PM2.5 is `r model$coefficients[2]`. The heteroskedacticity-robust standard error is `r model$std.error[2]`. The slope coefficient tells us that for every 1 microgram per cubic meter increase in PM2.5 concentration, there is a `r model$coefficients[2]` increase in the percentage of census tract births with weight less than 2500g. This is statistically significant at the 5% level. 
+The slope coefficient for the regression of Low Birth Weight on PM2.5 is `r model$coefficients[2]`. The heteroskedacticity-robust standard error is `r model$std.error[2]`. The slope coefficient tells us that for every 1 microgram per cubic meter increase in PM2.5 concentration, there is a `r model$coefficients[2]` increase in the percentage of census tract births with weight less than 2500g. This is statistically significant at the 5% level. 
 
-(e)
+# (e) Suppose a new air quality policy is expected to reduce PM2.5 concentration by 2 micrograms per cubic meters. Predict the new average value of `low_birth_weight` and derive its 95% confidence interval. Interpret the 95% confidence interval.
+
 ```{r}
+intercept <- model$coefficients[1]
+b1 <- model$coefficients[2]
+x = -2
 
 ```
 
 
-(f) 
+# (f) Add the variable `poverty` as an explanatory variable to the regression in (d). Interpret the estimated coefficient on Poverty. What happens to the estimated coefficient on PM25, compared to the regression in (d). Explain. 
+
 ```{r}
 model2 <- lm_robust(low_birth_weight ~ pm2_5 + poverty, data = ces4)
 summary(model2)
 ```
 
-The estimated coefficient for poverty is `r model2$coefficients[3]`. This tells us that holding PM2.5 constant, for every one percent increase in the population of the census tract living below twice the federal poverty line there is a `r model2$coefficients[3]` increase in the percentage of census tract births with weight less than 2500g. The coefficient for PM2.5 increases which displays that when poverty is considered in the regression, the PM2.5 value becomes more prominent. These variables are correlated. In the model that omits poverty, the regression coefficient of PM2.5 captures the effect of poverty on low birth weights.  
+The estimated coefficient for poverty is `r model2$coefficients[3]`. This tells us that holding PM2.5 constant, for every one percent increase in the population of the census tract living below twice the federal poverty line there is a `r model2$coefficients[3]` increase in the percentage of census tract births with weight less than 2500g. The coefficient for PM2.5 increases which displays that when poverty is considered in the regression, the PM2.5 value becomes more prominent. These variables are correlated. In the model that omits poverty, the regression coefficient of PM2.5 captures the effect of poverty on low birth weights. 
 
 
+# (g) From the regression in (f), test the null hypothesis that the effect of PM2.5 is equal to the effect of Poverty
 
-
-(g)
 ```{r}
 linhyp <- linearHypothesis(model2, c("pm2_5 = 0", "poverty=0"),
                            white.adjust = "hc2")
