@@ -37,7 +37,6 @@ for (i in packages) {
 
 \noindent The full data are contained in the file CES4.xls, which is available on Gauchospace (note that the Excel file has three “tabs” or “sheets”). The data is in the tab “CES4.0FINAL_results” and “Data Dictionary” contains the definition of the variables.
 
-# Clean data
 
 \noindent The following code loads and cleans the data.
 
@@ -57,7 +56,7 @@ ces4 <- CES4_raw %>%
 
 \noindent The following code chunks answer the questions provided in the assignment.  
 
-# (a) What is the average concentration of PM2.5 across all census tracts in California?
+# What is the average concentration of PM2.5 across all census tracts in California?
 
 ```{r , include=TRUE}
 # Avg PM2.5 Conc
@@ -68,7 +67,7 @@ avg_pm25_conc <- mean(ces4$pm2_5)
 
 The average PM2.5 concentration across all census tracts in California is `r avg_pm25_conc`.
 
-# (b) What county has the highest level of poverty in California? 
+# What county has the highest level of poverty in California? 
 
 ```{r}
 # highest poverty 
@@ -80,9 +79,9 @@ highest_poverty <- ces4 %>%
 
 ```
 
-The county with the highest level of poverty is: `r highest_poverty$california_county[1]`. 
+The county with the highest level of poverty is: `r highest_poverty$california_county[1]`. I calculated this by first grouping the data by county and then finding the average percentage of poverty per county. I chose the county with the highest mean percentage poverty as the answer to this question. 
 
-# (c) Make a histogram depicting the distribution of percent low birth weight and PM2.5.
+# Make a histogram depicting the distribution of percent low birth weight and PM2.5.
 
 ```{r}
 
@@ -105,7 +104,7 @@ birth_weight_plot / pm2_5_plot
 ```
 
 
-# (d) Estimate a OLS regression of `low_birth_weight` on `pm2_5`. Report the estimated slope coefficient and its heteroskedasticity-robust standard error. Interpret the estimated slope coefficient. Is the effect of `pm2_5` on `low_birth_weight` statistically significant at the 5%?
+# Estimate a OLS regression of `low_birth_weight` on `pm2_5`. Report the estimated slope coefficient and its heteroskedasticity-robust standard error. Interpret the estimated slope coefficient. Is the effect of `pm2_5` on `low_birth_weight` statistically significant at the 5%?
 
 ```{r}
 model <- lm_robust(low_birth_weight ~ pm2_5, data = ces4)
@@ -116,20 +115,20 @@ The slope coefficient for the regression of Low Birth Weight on PM2.5 is `r mode
 
 ### Question e was removed
 
-# (f) Add the variable `poverty` as an explanatory variable to the regression in (d). Interpret the estimated coefficient on Poverty. What happens to the estimated coefficient on PM25, compared to the regression in (d). Explain. 
+# Add the variable `poverty` as an explanatory variable to the regression in (4). Interpret the estimated coefficient on Poverty. What happens to the estimated coefficient on PM25, compared to the regression in (4). Explain. 
 
 ```{r}
 model2 <- lm_robust(low_birth_weight ~ pm2_5 + poverty, data = ces4)
 summary(model2)
 ```
 
-The estimated coefficient for poverty is `r model2$coefficients[3]`. This tells us that holding PM2.5 constant, for every one percent increase in the population of the census tract living below twice the federal poverty line there is a `r model2$coefficients[3]` increase in the percentage of census tract births with weight less than 2500g. The coefficient for PM2.5 increases which displays that when poverty is considered in the regression, the PM2.5 value becomes more prominent. These variables are correlated. In the model that omits poverty, the regression coefficient of PM2.5 captures the effect of poverty on low birth weights. 
+The estimated coefficient for poverty is `r model2$coefficients[3]`. This tells us that holding PM2.5 constant, for every one percent increase in the population of the census tract living below twice the federal poverty line there is a `r model2$coefficients[3]` increase in the percentage of census tract births with weight less than 2500g. The coefficient for PM2.5 decreases in the second model which means that poverty explains some of the change in Low Birth Weights. The first model we examined had poverty contributing to omitted variable bias and overestimated the impact of PM2.5 on Low Birth Weight. 
 
 
-# (g) From the regression in (f), test the null hypothesis that the effect of PM2.5 is equal to the effect of Poverty
+# From the regression in (f), test the null hypothesis that the effect of PM2.5 is equal to the effect of Poverty
 
 ```{r}
-linhyp <- linearHypothesis(model2, c("pm2_5 = 0", "poverty=0"),
+linhyp <- linearHypothesis(model2, c("pm2_5 = 0", "poverty = 0"),
                            white.adjust = "hc2")
 linhyp
 ```
