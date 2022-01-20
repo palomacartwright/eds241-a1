@@ -128,7 +128,7 @@ The estimated coefficient for poverty is `r model2$coefficients[3]`. This tells 
 # From the regression in (f), test the null hypothesis that the effect of PM2.5 is equal to the effect of Poverty
 
 ```{r}
-linhyp <- linearHypothesis(model2, c("pm2_5 = 0", "poverty = 0"),
+linhyp <- linearHypothesis(model2, c("pm2_5 = poverty"),
                            white.adjust = "hc2")
 linhyp
 ```
